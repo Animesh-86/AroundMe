@@ -6,7 +6,7 @@ public class RssUtil {
 
     public static List<RssItem> fetch() {
         // Hardcode sample RSS content OR
-        // Use Rome library if already familiar
+        // Use a Rome library if already familiar
 
         return List.of(
                 new RssItem(

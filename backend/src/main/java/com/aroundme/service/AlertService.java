@@ -23,10 +23,7 @@ public class AlertService {
     private final AlertRepository alertRepository;
     private final OpenAIReasoningService aiReasoningService;
     private final MockDataService mockDataService;
-    
-    /**
-     * Main method: Get AI-curated alerts based on user context
-     */
+
     public CuratedAlertsResponse getCuratedAlerts(UserContextRequest userContext) {
         log.info("Getting curated alerts for location: {}", userContext.getAddress());
         
@@ -69,10 +66,7 @@ public class AlertService {
             curatedAlerts.size()
         );
     }
-    
-    /**
-     * Fetch raw alerts from database and mock data
-     */
+
     private List<Alert> fetchRawAlerts(UserContextRequest userContext) {
         List<Alert> alerts;
         
@@ -91,10 +85,7 @@ public class AlertService {
         
         return alerts;
     }
-    
-    /**
-     * Submit a new alert from community
-     */
+
     public Alert submitAlert(SubmitAlertRequest request) {
         log.info("New alert submission: {}", request.getTitle());
         
@@ -117,17 +108,11 @@ public class AlertService {
         
         return alertRepository.save(alert);
     }
-    
-    /**
-     * Get all alert categories
-     */
+
     public List<AlertCategory> getAllCategories() {
         return List.of(AlertCategory.values());
     }
-    
-    /**
-     * Calculate distance between two coordinates using Haversine formula
-     */
+
     private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
         final int EARTH_RADIUS_KM = 6371;
         
@@ -142,10 +127,7 @@ public class AlertService {
         
         return EARTH_RADIUS_KM * c;
     }
-    
-    /**
-     * Extract city name from address
-     */
+
     private String extractCity(String address) {
         if (address == null || address.isEmpty()) {
             return "Unknown";
