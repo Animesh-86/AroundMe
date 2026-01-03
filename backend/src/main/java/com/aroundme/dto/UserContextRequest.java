@@ -17,6 +17,6 @@ public class UserContextRequest {
     private String address;
     private Double radiusKm; // 2, 5, or 10 km
     private List<AlertCategory> interestedCategories;
-    private String intent; // Optional: "heading to ISKCON temple", etc.
-    private String destination; // Optional destination
+    private String intent;
+    private String destination;
 }

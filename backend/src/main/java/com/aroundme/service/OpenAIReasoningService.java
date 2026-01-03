@@ -1,8 +1,7 @@
 package com.aroundme.service;
 
 import com.aroundme.dto.UserContextRequest;
-import com.aroundme.model.Alert;
-import com.aroundme.model.ImpactLevel;
+import com.aroundme.model.*;
 import com.theokanning.openai.completion.chat.ChatCompletionRequest;
 import com.theokanning.openai.completion.chat.ChatCompletionResult;
 import com.theokanning.openai.completion.chat.ChatMessage;
@@ -142,9 +141,7 @@ public class OpenAIReasoningService {
         return prompt.toString();
     }
     
-    /**
-     * Parse AI response and map back to Alert objects
-     */
+
     private List<Alert> parseAIResponse(String aiResponse, List<Alert> rawAlerts) {
         List<Alert> curatedAlerts = new ArrayList<>();
         
@@ -252,4 +249,85 @@ public class OpenAIReasoningService {
         
         return prompt.toString();
     }
+
+    public Alert convertRssToAlert(RssItem item) {
+        try {
+            String prompt = """
+            You are extracting city alerts from public news feeds.
+
+            Rules:
+            - If the news does NOT mention a clear city location, respond with IGNORE
+            - Classify into one category:
+              TRAFFIC, WEATHER, SAFETY, EVENTS, ROAD_WORK, EMERGENCY, OTHER
+            - Write a 1-line public alert (clear and concise)
+            - Assume city is Vadodara if city not explicitly mentioned
+            - Do NOT hallucinate exact coordinates
+
+            News:
+            Title: %s
+            Description: %s
+
+            Output EXACTLY in this format:
+            CATEGORY:
+            SUMMARY:
+            LOCATION:
+            """.formatted(item.getTitle(), item.getDescription());
+
+            ChatCompletionRequest request = ChatCompletionRequest.builder()
+                    .model(model)
+                    .messages(List.of(
+                            new ChatMessage(ChatMessageRole.SYSTEM.value(),
+                                    "You convert news into structured city alerts."),
+                            new ChatMessage(ChatMessageRole.USER.value(), prompt)
+                    ))
+                    .temperature(0.2) // IMPORTANT: keep deterministic
+                    .maxTokens(200)
+                    .build();
+
+            ChatCompletionResult result = openAiService.createChatCompletion(request);
+            String response = result.getChoices().get(0).getMessage().getContent();
+
+            log.debug("RSS AI response: {}", response);
+
+            if (response.toUpperCase().contains("IGNORE")) {
+                return null;
+            }
+
+            String categoryStr = extractField(response, "CATEGORY");
+            String summary = extractField(response, "SUMMARY");
+            String locationText = extractField(response, "LOCATION");
+
+            Alert alert = new Alert();
+            alert.setTitle(item.getTitle());
+            alert.setDescription(summary);
+            alert.setCategory(parseCategory(categoryStr));
+            alert.setImpact(ImpactLevel.INFO); // RSS = informational by default
+            alert.setActive(true);
+            alert.setSubmittedBy("Public RSS Feed");
+
+            // IMPORTANT: do NOT fake coordinates
+            alert.setLocation(new Location(
+                    22.3072,   // Vadodara center fallback
+                    73.1812,
+                    locationText,
+                    "Vadodara"
+            ));
+
+            return alert;
+
+        } catch (Exception e) {
+            log.error("Failed to convert RSS item to alert", e);
+            return null;
+        }
+    }
+
+    private AlertCategory parseCategory(String raw) {
+        try {
+            return AlertCategory.valueOf(raw.trim().toUpperCase());
+        } catch (Exception e) {
+            return AlertCategory.OTHER;
+        }
+    }
+
+
 }

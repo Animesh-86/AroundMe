@@ -11,10 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-/**
- * Mock data service for hackathon demo
- * Generates realistic city alerts for testing
- */
 @Service
 public class MockDataService {
     
