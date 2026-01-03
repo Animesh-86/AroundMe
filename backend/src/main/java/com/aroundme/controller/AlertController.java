@@ -1,6 +1,7 @@
 package com.aroundme.controller;
 
 import com.aroundme.dto.CuratedAlertsResponse;
+import com.aroundme.dto.MapAlertDTO;
 import com.aroundme.dto.SubmitAlertRequest;
 import com.aroundme.dto.UserContextRequest;
 import com.aroundme.model.Alert;
@@ -21,11 +22,7 @@ import java.util.List;
 public class AlertController {
     
     private final AlertService alertService;
-    
-    /**
-     * Main endpoint: Get AI-curated alerts based on user context
-     * POST /api/alerts/curated
-     */
+
     @PostMapping("/curated")
     public ResponseEntity<CuratedAlertsResponse> getCuratedAlerts(
             @RequestBody @Valid UserContextRequest request) {
@@ -37,10 +34,7 @@ public class AlertController {
         return ResponseEntity.ok(response);
     }
     
-    /**
-     * Submit a new community alert
-     * POST /api/alerts/submit
-     */
+
     @PostMapping("/submit")
     public ResponseEntity<Alert> submitAlert(@RequestBody @Valid SubmitAlertRequest request) {
         
@@ -50,22 +44,30 @@ public class AlertController {
         
         return ResponseEntity.ok(createdAlert);
     }
-    
-    /**
-     * Get all available alert categories
-     * GET /api/alerts/categories
-     */
+
     @GetMapping("/categories")
     public ResponseEntity<List<AlertCategory>> getCategories() {
         return ResponseEntity.ok(alertService.getAllCategories());
     }
     
-    /**
-     * Health check endpoint
-     * GET /api/alerts/health
-     */
+
     @GetMapping("/health")
     public ResponseEntity<String> health() {
         return ResponseEntity.ok("AroundMe Backend is running!");
+    }
+
+    @GetMapping("/map")
+    public ResponseEntity<List<MapAlertDTO>> getMapAlerts(
+            @RequestParam Double latitude,
+            @RequestParam Double longitude,
+            @RequestParam(defaultValue = "5") Double radiusKm
+    ) {
+        if (latitude == null || longitude == null) {
+            return ResponseEntity.badRequest().body(List.of());
+        }
+
+        return ResponseEntity.ok(
+                alertService.getMapAlerts(latitude, longitude, radiusKm)
+        );
     }
 }

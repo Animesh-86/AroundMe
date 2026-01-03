@@ -1,6 +1,7 @@
 package com.aroundme.service;
 
 import com.aroundme.dto.CuratedAlertsResponse;
+import com.aroundme.dto.MapAlertDTO;
 import com.aroundme.dto.SubmitAlertRequest;
 import com.aroundme.dto.UserContextRequest;
 import com.aroundme.model.Alert;
@@ -153,4 +154,34 @@ public class AlertService {
         String[] parts = address.split(",");
         return parts.length > 0 ? parts[parts.length - 1].trim() : "Unknown";
     }
+
+    public List<MapAlertDTO> getMapAlerts(
+            Double userLat, Double userLng, Double radiusKm) {
+
+        List<Alert> alerts = alertRepository.findByIsActiveTrue();
+
+        return alerts.stream()
+                .peek(alert -> {
+                    double dist = calculateDistance(
+                            userLat, userLng,
+                            alert.getLocation().getLatitude(),
+                            alert.getLocation().getLongitude()
+                    );
+                    alert.setDistanceFromUser(dist);
+                })
+                .filter(alert -> alert.getDistanceFromUser() <= radiusKm)
+                .limit(20) // CRITICAL: map safety
+                .map(alert -> new MapAlertDTO(
+                        alert.getLocation().getLatitude(),
+                        alert.getLocation().getLongitude(),
+                        alert.getCategory(),
+                        alert.getImpact(),
+                        alert.getTitle(),
+                        alert.getWhyItMatters() != null
+                                ? alert.getWhyItMatters()
+                                : alert.getDescription()
+                ))
+                .toList();
+    }
+
 }
